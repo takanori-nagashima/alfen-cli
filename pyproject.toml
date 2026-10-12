@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alfen-cli"
+dynamic = ["version"]
+description = "CLI for the local HTTPS API of Alfen Eve / NG9xx EV chargers: properties, logs, transactions, reboot, signed meter values"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "LoveKapibarasan" }]
+keywords = ["alfen", "ev", "charger", "ocpp", "eve", "ng910"]
+classifiers = [
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Topic :: Utilities",
+]
+dependencies = ["requests>=2.28"]
+
+[project.urls]
+Source = "https://gitea.ai-charge.net/AI-ChargeTechnologies/alfen-cli"
+Mirror = "https://github.com/takanori-nagashima/alfen-cli"
+
+[project.optional-dependencies]
+signed = ["cryptography>=41"]
+
+[project.scripts]
+alfen = "alfen_cli.cli:main"
+
+[tool.hatch.version]
+path = "src/alfen_cli/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/alfen_cli"]
