@@ -22,10 +22,22 @@ alfen verify <meterPublicKey> <signedMeterData>   # Alfen/DZG signed meter value
 
 `--json` gives machine-readable output.
 
-## Notes
+## One session at a time
 
-- The charger accepts **one API session at a time**. Logging in ends an open ACE Service
-  Installer / web session and vice versa. `alfen` logs out when each command finishes.
+The charger's web API serves **one client at a time**. While ACE Service Installer, the
+charger's web UI in a browser, Home Assistant (alfen_wallbox) or another script is connected,
+every other connection is dropped right after the TCP connect or the TLS ClientHello:
+
+```
+error: ConnectionError: ... Connection reset by peer
+```
+
+The charger log shows it as `TLS handshake failed (-0x50)` / `WebServer state AVAILABLE -> BUSY`.
+Close the other client (in ACE Service Installer: disconnect, or quit the program) and retry.
+Wrong credentials look different (HTTP 401/403 from `/api/login`). `alfen` logs out when each
+command finishes, so it does not hold the session itself; `alfen logs -f` does, until you stop it.
+
+## Notes
 - The charger uses a self-signed certificate and old TLS ciphers; certificate checks are off.
 - Repeated wrong passwords can lock the account. Check credentials before scripting.
 - `set` writes raw property ids. Some changes only apply after `reboot`.

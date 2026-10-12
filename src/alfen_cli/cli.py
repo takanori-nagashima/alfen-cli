@@ -193,7 +193,11 @@ def main(argv: list[str] | None = None) -> None:
     except Exception as e:  # network errors etc.
         if os.environ.get("ALFEN_DEBUG"):
             raise
-        sys.exit(f"error: {type(e).__name__}: {e}")
+        hint = ""
+        if "Connection reset by peer" in str(e) or isinstance(e, ConnectionResetError):
+            hint = ("\nhint: the charger serves one API client at a time. Close ACE Service Installer,"
+                    " the web UI or any other client connected to it, then retry.")
+        sys.exit(f"error: {type(e).__name__}: {e}{hint}")
 
 
 if __name__ == "__main__":
