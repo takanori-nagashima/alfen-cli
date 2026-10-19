@@ -75,6 +75,27 @@ def cmd_set(a):
         print(json.dumps(result, default=str), file=sys.stderr)
 
 
+# Display pricing (OD 3262_*). A set StartPrice/EnergyPrice with an empty
+# Currency is an incomplete tariff and the charger faults with
+# ErrorMissingTariffs, so `tariff` is the shortcut for getting all three right.
+_TARIFF_IDS = {"currency": "3262_1", "start_price": "3262_2", "energy_price": "3262_3"}
+
+
+def cmd_tariff(a):
+    updates = {}
+    if a.currency is not None:
+        updates["3262_1"] = a.currency
+    if a.start_price is not None:
+        updates["3262_2"] = a.start_price
+    if a.energy_price is not None:
+        updates["3262_3"] = a.energy_price
+    with _client(a) as c:
+        if updates:
+            c.set_properties(updates)
+        props = list(c.properties(ids=list(_TARIFF_IDS.values())))
+    _print([{"id": p.id, "name": p.name, "value": p.value} for p in props], a.json)
+
+
 def cmd_logs(a):
     with _client(a) as c:
         if not a.follow:
@@ -159,6 +180,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--string", action="store_true", help="send values as strings")
     s.add_argument("-v", "--verbose", action="store_true")
     s.set_defaults(fn=cmd_set)
+
+    t = sub.add_parser("tariff", help="show or set display pricing (currency/start/energy); "
+                                      "an empty currency causes ErrorMissingTariffs")
+    t.add_argument("--currency", help="ISO currency code, e.g. EUR")
+    t.add_argument("--start-price", dest="start_price", type=float, help="session start price")
+    t.add_argument("--energy-price", dest="energy_price", type=float, help="price per kWh")
+    t.set_defaults(fn=cmd_tariff)
 
     lg = sub.add_parser("logs", help="charger event log (plain text, newest last)")
     lg.add_argument("-n", "--limit", type=int, default=200)
