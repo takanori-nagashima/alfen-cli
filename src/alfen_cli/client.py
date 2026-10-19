@@ -123,18 +123,23 @@ class Alfen:
     def login(self) -> None:
         if not self.password:
             raise AlfenError("password required (ALFEN_PASSWORD or --password)")
-        # NG9xx firmware (>= 2.x) authenticates with a JWT bearer token returned
-        # in the login response body, not a session cookie. Clear any stale
-        # Authorization header, log in, then carry the access token on every
-        # subsequent request.
+        # Two auth schemes across firmware generations, both supported here:
+        #   - NG9xx >= 2.x returns a JWT {"access": ...} in the body, sets no
+        #     cookie, and expects `Authorization: Bearer <access>`.
+        #   - older firmware authenticates with a session cookie and returns no
+        #     token in the body.
+        # Clear both carriers, log in, then use the bearer token when the body
+        # has one and otherwise fall back to the cookie the session just stored.
         self.session.headers.pop("Authorization", None)
         self.session.cookies.clear()
         r = self._request("POST", "login", retry_login=False, json={
             "username": self.username, "password": self.password, "displayname": self.displayname})
-        token = (self._json(r) or {}).get("access")
-        if not token:
-            raise AlfenError("login succeeded but no access token in response")
-        self.session.headers["Authorization"] = f"Bearer {token}"
+        try:
+            token = (self._json(r) or {}).get("access")
+        except (ValueError, AttributeError):
+            token = None
+        if token:
+            self.session.headers["Authorization"] = f"Bearer {token}"
 
     def logout(self) -> None:
         try:
